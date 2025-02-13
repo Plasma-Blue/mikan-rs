@@ -1,6 +1,6 @@
 # mikan-rs
 
-A *m*edical *i*mage *k*it for segment*a*tion metrics evaluatio*n*, native Rust support, and Python bindings for cross-language performance.
+A **m**edical **i**mage **k**it for segment**a**tion metrics evaluatio**n**, native Rust support, and Python bindings for cross-language performance.
 
 ## 🎨Features
 
@@ -44,6 +44,7 @@ For details, please refer to the [rust examples](examples/tutorial.rs) and [pyth
 ## 🍚Q&A
 
 Q: Why are my results different from medpy/seg_metrics/miseval/Metrics Reloaded?
+
 A: They are wrong. Of course, we might be wrong too. PRs to fix issues are welcome!
 
 ## 🔒License
