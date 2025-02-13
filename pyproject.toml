@@ -1,0 +1,18 @@
+[build-system]
+requires = ["maturin>=1.8,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "mikan-rs"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dynamic = ["version"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+[tool.maturin]
+features = ["pyo3/extension-module"]
+python-source = "python"
+module-name = "mikan._mikan"

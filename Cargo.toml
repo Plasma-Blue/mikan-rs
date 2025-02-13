@@ -1,0 +1,24 @@
+[package]
+name = "mikan-rs"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "A medical image kit for segmentation metrics evaluation, native Rust support, and Python bindings for cross-language performance."
+readme = "README.md"
+repository = "https://github.com/Plasma-Blue/mikan-rs"
+keywords = ["medical-imaging", "metrics", "nifti", "nibabel", "ITK"]
+categories = ["computer-vision", "science::neuroscience"]
+
+[lib]
+name = "mikan"
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+ndarray = "0.15.6"
+ndarray-ndimage = "0.4.0"
+rayon = "1.10.0"
+kdtree = "0.7.0"
+ndarray-stats = "0.5.0"
+rand = "0.8"
+pyo3 = "0.23.4"
+nii-rs = "0.1.1"
