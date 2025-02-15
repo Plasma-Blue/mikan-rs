@@ -1,6 +1,5 @@
-use crate::cm::ConfusionMatrix;
-use crate::kdtree::Distance;
-use crate::metrics::*;
+use crate::api::metrics;
+use crate::metrics::{ConfusionMatrix, Distance};
 use crate::utils::{get_unique_labels_parallel, merge_vector};
 use nii;
 use pyo3::prelude::*;
@@ -171,4 +170,13 @@ pub fn metrics_all_bind(gt_pth: &str, pred_pth: &str) -> PyResult<Vec<BTreeMap<S
         false,
     );
     Ok(metrics(gt, pred, labels, true))
+}
+
+#[pymodule]
+fn _mikan(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<ConfusionMatrixBind>()?;
+    m.add_class::<DistanceBind>()?;
+    m.add_function(wrap_pyfunction!(metrics_all_bind, m)?)?;
+    m.add_function(wrap_pyfunction!(metrics_bind, m)?)?;
+    Ok(())
 }

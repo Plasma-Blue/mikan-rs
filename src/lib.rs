@@ -1,22 +1,6 @@
-pub mod cm;
-pub mod erose;
-pub mod kdtree;
-pub mod metrics;
-pub mod utils;
-
-pub use cm::ConfusionMatrix;
-pub use kdtree::Distance;
-pub use metrics::*;
-
+pub mod api;
 mod bind;
-use bind::*;
-use pyo3::prelude::*;
+mod metrics;
+mod utils;
 
-#[pymodule]
-fn _mikan(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<ConfusionMatrixBind>()?;
-    m.add_class::<DistanceBind>()?;
-    m.add_function(wrap_pyfunction!(metrics_all_bind, m)?)?;
-    m.add_function(wrap_pyfunction!(metrics_bind, m)?)?;
-    Ok(())
-}
+pub use api::Evaluator;

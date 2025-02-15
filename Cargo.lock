@@ -158,6 +158,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "katexit"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb1304c448ce2c207c2298a34bc476ce7ae47f63c23fa2b498583b26be9bc88c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "kdtree"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -194,13 +205,15 @@ dependencies = [
 
 [[package]]
 name = "mikan-rs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
+ "katexit",
  "kdtree",
  "ndarray",
  "ndarray-ndimage",
  "ndarray-stats",
  "nii-rs",
+ "once_cell",
  "pyo3",
  "rand",
  "rayon",
