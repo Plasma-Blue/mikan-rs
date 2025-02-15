@@ -1,3 +1,5 @@
+//! Core APIs. Carefully designed to be simple and easy to use.
+
 use crate::metrics::{ConfusionMatrix, Distance};
 use crate::utils::{get_unique_labels_parallel, merge_vector};
 use std::collections::BTreeMap;
@@ -7,7 +9,7 @@ use once_cell::unsync::OnceCell;
 use rayon::prelude::*;
 
 #[cfg_attr(doc, katexit::katexit)]
-/// A structure to calculate various metrics based on confusion matrix & distance for segmentation tasks.
+/// A struct to calculate various metrics based on confusion matrix & distance for segmentation tasks, designed to provide fine-grained computational control, such as determining target labels and target metrics.
 pub struct Evaluator<'a> {
     cm: ConfusionMatrix,
     dist: OnceCell<Distance>,
@@ -358,6 +360,30 @@ impl<'a> Evaluator<'a> {
     }
 }
 
+/// A simple function api to calculate lots of metrics for given labels.
+///
+/// # Arguments
+///
+/// * `gt` - Ground truth image as a `Nifti1Image<u8>`
+/// * `pred` - Predicted segmentation image as a `Nifti1Image<u8>`
+/// * `labels` - Vector of label values to evaluate
+/// * `with_distance` - Boolean flag to include distance-based metrics
+///
+/// # Examples
+///
+/// ```rust
+/// use nii;
+/// use mikan::metrics;
+///
+/// let gt = nii::read_image::<u8>(r"data\patients_26_ground_truth.nii.gz");
+/// let pred = nii::read_image::<u8>(r"data\patients_26_segmentation.nii.gz");
+///
+/// // Calculate only confusion matrix based metrics
+/// let basic_metrics = metrics(&gt, &pred, vec![1, 2, 3], false);
+///
+/// // Calculate both confusion matrix and distance based metrics
+/// let all_metrics = metrics(&gt, &pred, vec![1, 2, 3], true);
+/// ```
 pub fn metrics(
     gt: &Nifti1Image<u8>,
     pred: &Nifti1Image<u8>,
@@ -391,7 +417,23 @@ pub fn metrics(
     mat_results
 }
 
-/// Calculates all metrics for all labels
+/// A simple function api to calculate all metrics for all labels.
+///
+/// # Examples
+///
+/// ```rust
+/// use nii;
+/// use mikan::all;
+///
+/// let gt_image = nii::read_image::<u8>(r"data\patients_26_ground_truth.nii.gz");
+/// let pred_image = nii::read_image::<u8>(r"data\patients_26_segmentation.nii.gz");
+///
+/// let metrics = all(&gt_image, &pred_image);
+///
+/// for metric in metrics.iter() {
+///    println!("{:?}", metric);
+/// }
+/// ```
 pub fn all(gt: &Nifti1Image<u8>, pred: &Nifti1Image<u8>) -> Vec<BTreeMap<String, f64>> {
     let labels = merge_vector(
         get_unique_labels_parallel(gt.ndarray()),

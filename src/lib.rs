@@ -38,7 +38,7 @@
 //!
 //! ## 📘 Usages
 //!
-//! For details, please refer to the [rust examples](examples/tutorial.rs) and [python examples](examples/tutorial.py)。
+//! For details, please refer to the [rust examples](https://github.com/Plasma-Blue/mikan-rs/blob/master/examples/tutorial.rs) and [python examples](https://github.com/Plasma-Blue/mikan-rs/blob/master/examples/tutorial.py)。
 //!
 //! ## 🍚 Q&A
 //!
@@ -55,4 +55,4 @@ mod bind;
 mod metrics;
 mod utils;
 
-pub use api::Evaluator;
+pub use api::{all, metrics, Evaluator};
