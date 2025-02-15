@@ -8,6 +8,7 @@ use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
 use rayon::prelude::*;
 
+/// A structure to calculate various metrics based on confusion matrix for binary classification or segmentation tasks.
 #[derive(Debug, Clone)]
 pub struct ConfusionMatrix {
     tp_count: f64,
@@ -215,6 +216,7 @@ impl KDTree {
     }
 }
 
+/// A structure to calculate various metrics based on distance for binary classification or segmentation tasks.
 pub struct Distance {
     dist_pred_to_gt: Vec<f32>,
     dist_gt_to_pred: Vec<f32>,
@@ -281,16 +283,8 @@ impl Distance {
             dist_gt_to_pred,
         }
     }
-    pub fn get_hausdorff_distance_95(&self) -> f32 {
-        let mut dist_pred_to_gt = self.dist_pred_to_gt.clone();
-        let mut dist_gt_to_pred = self.dist_gt_to_pred.clone();
-        f32::max(
-            get_percentile(&mut dist_pred_to_gt, 0.95),
-            get_percentile(&mut dist_gt_to_pred, 0.95),
-        )
-    }
 
-    pub fn get_hausdorff_distance(&self) -> f32 {
+    pub fn get_hausdorff_distance(&self) -> f64 {
         f32::max(
             Array::from(self.dist_pred_to_gt.clone())
                 .max()
@@ -300,35 +294,44 @@ impl Distance {
                 .max()
                 .unwrap()
                 .clone(),
-        )
+        ) as f64
     }
 
-    pub fn get_assd(&self) -> f32 {
+    pub fn get_hausdorff_distance_95(&self) -> f64 {
+        let mut dist_pred_to_gt = self.dist_pred_to_gt.clone();
+        let mut dist_gt_to_pred = self.dist_gt_to_pred.clone();
+        f32::max(
+            get_percentile(&mut dist_pred_to_gt, 0.95),
+            get_percentile(&mut dist_gt_to_pred, 0.95),
+        ) as f64
+    }
+
+    pub fn get_assd(&self) -> f64 {
         let merged = self
             .dist_pred_to_gt
             .iter()
             .chain(self.dist_gt_to_pred.iter())
             .cloned()
             .collect();
-        mean(&merged)
+        mean(&merged) as f64
     }
 
-    pub fn get_masd(&self) -> f32 {
-        (mean(&self.dist_pred_to_gt) + mean(&self.dist_gt_to_pred)) / 2.0
+    pub fn get_masd(&self) -> f64 {
+        ((mean(&self.dist_pred_to_gt) + mean(&self.dist_gt_to_pred)) / 2.0) as f64
     }
 
     pub fn get_all(&self) -> BTreeMap<String, f64> {
         let mut results = BTreeMap::new();
         results.insert(
             "hausdorff_distance".to_string(),
-            self.get_hausdorff_distance() as f64,
+            self.get_hausdorff_distance(),
         );
         results.insert(
             "hausdorff_distance_95".to_string(),
-            self.get_hausdorff_distance_95() as f64,
+            self.get_hausdorff_distance_95(),
         );
-        results.insert("assd".to_string(), self.get_assd() as f64);
-        results.insert("masd".to_string(), self.get_masd() as f64);
+        results.insert("assd".to_string(), self.get_assd());
+        results.insert("masd".to_string(), self.get_masd());
         results
     }
 }
@@ -408,7 +411,7 @@ mod test {
 
         let label: Vec<u8> = vec![1, 2, 3, 4, 5];
 
-        let results: Vec<f32> = label
+        let results: Vec<f64> = label
             .par_iter()
             .map(|label| {
                 let dist = Distance::new(&gt, &pred, *label);

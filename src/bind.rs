@@ -127,19 +127,19 @@ impl DistanceBind {
         Ok(DistanceBind { inner })
     }
 
-    pub fn get_hausdorff_distance_95(&self) -> f32 {
+    pub fn get_hausdorff_distance_95(&self) -> f64 {
         self.inner.get_hausdorff_distance_95()
     }
 
-    pub fn get_hausdorff_distance(&self) -> f32 {
+    pub fn get_hausdorff_distance(&self) -> f64 {
         self.inner.get_hausdorff_distance()
     }
 
-    pub fn get_assd(&self) -> f32 {
+    pub fn get_assd(&self) -> f64 {
         self.inner.get_assd()
     }
 
-    pub fn get_masd(&self) -> f32 {
+    pub fn get_masd(&self) -> f64 {
         self.inner.get_masd()
     }
 
@@ -157,7 +157,7 @@ pub fn metrics_bind(
 ) -> PyResult<Vec<BTreeMap<String, f64>>> {
     let gt = nii::read_image::<u8>(gt_pth);
     let pred = nii::read_image::<u8>(pred_pth);
-    Ok(metrics(gt, pred, labels, with_distances))
+    Ok(metrics(&gt, &pred, labels, with_distances))
 }
 
 #[pyfunction]
@@ -169,7 +169,7 @@ pub fn metrics_all_bind(gt_pth: &str, pred_pth: &str) -> PyResult<Vec<BTreeMap<S
         get_unique_labels_parallel(pred.ndarray()),
         false,
     );
-    Ok(metrics(gt, pred, labels, true))
+    Ok(metrics(&gt, &pred, labels, true))
 }
 
 #[pymodule]

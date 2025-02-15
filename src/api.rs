@@ -6,6 +6,8 @@ use nii::Nifti1Image;
 use once_cell::unsync::OnceCell;
 use rayon::prelude::*;
 
+#[cfg_attr(doc, katexit::katexit)]
+/// A structure to calculate various metrics based on confusion matrix & distance for segmentation tasks.
 pub struct Evaluator<'a> {
     cm: ConfusionMatrix,
     dist: OnceCell<Distance>,
@@ -15,6 +17,22 @@ pub struct Evaluator<'a> {
 }
 
 impl<'a> Evaluator<'a> {
+    /// Creates a new instance of Evaluator from `nii::Nifti1Image<u8>`
+    /// Example:
+    ///
+    /// ```rust
+    /// use nii;
+    /// use mikan::Evaluator;
+    ///
+    /// let gt = nii::read_image::<u8>(r"data\patients_26_ground_truth.nii.gz");
+    /// let pred = nii::read_image::<u8>(r"data\patients_26_segmentation.nii.gz");
+    /// let label = 1;
+    /// let evaluator = Evaluator::new(&gt, &pred, label);
+    ///
+    /// let dsc = evaluator.get_dice();              // Dice Coefficient
+    /// let hd = evaluator.get_hausdorff_distance(); // Hausdorff Distance
+    ///
+    /// ```
     pub fn new(gt: &'a Nifti1Image<u8>, pred: &'a Nifti1Image<u8>, label: u8) -> Evaluator<'a> {
         Evaluator {
             cm: ConfusionMatrix::new(gt, pred, label),
@@ -25,140 +43,324 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    #[cfg_attr(doc, katexit::katexit)]
-    /// Recall/Sensitivity/Hit rate/True positive rate (TPR)/敏感性/召回率
+    /// Calculates Sensitivity
     ///
-    /// $$\text{Sens} = \dfrac{TP}{TP+FN}$$
+    /// Also known as:
+    /// * TPR (True Positive Rate)
+    /// * Recall
+    /// * Hit Rate
+    ///
+    /// Implementation:
+    /// $$\text{Sensitivity} = \dfrac{TP}{TP + FN}$$
     ///
     pub fn get_senstivity(&self) -> f64 {
         self.cm.get_senstivity()
     }
 
-    /// Selectivity/Specificity/True negative rate (TNR)/特异性
+    /// Calculates Specificity
+    ///
+    /// Also known as:
+    /// * TNR (True Negative Rate)
+    /// * Selectivity
+    ///
+    /// Implementation:
+    /// $$\text{Specificity} = \dfrac{TN}{TN + FP}$$
+    ///
     pub fn get_specificity(&self) -> f64 {
         self.cm.get_specificity()
     }
 
-    /// Precision/Positive predictive value (PPV)/精确性
+    /// Calculates Precision
+    ///
+    /// Also known as:
+    /// * PPV (Positive Predictive Value)
+    ///
+    /// Implementation:
+    /// $$\text{Precision} = \dfrac{TP}{TP + FP}$$
     pub fn get_precision(&self) -> f64 {
         self.cm.get_precision()
     }
 
-    /// accuracy/acc/Rand Index/RI/准确性
+    /// Calculates Accuracy
+    ///
+    /// Also known as:
+    /// * ACC
+    /// * Rand Index (RI)
+    ///
+    /// Implementation:
+    /// $$\text{Accuracy} = \dfrac{TP + TN}{TP + TN + FP + FN}$$
+    ///
     pub fn get_accuracy(&self) -> f64 {
         self.cm.get_accuracy()
     }
 
-    /// balanced accuracy / BACC
+    /// Calculates Balanced Accuracy
+    ///
+    /// Also known as:
+    /// * BACC
+    /// * Balanced Classification Rate
+    ///
+    /// Implementation:
+    /// $$\text{BACC} = \dfrac{\text{Sensitivity} + \text{Specificity}}{2}$$
+    ///
     pub fn get_balanced_accuracy(&self) -> f64 {
         self.cm.get_balanced_accuracy()
     }
 
-    /// Dice/DSC
+    /// Calculates Dice Coefficient
+    ///
+    /// Also known as:
+    /// * DSC (Dice Similarity Coefficient)
+    /// * F1-Score
+    /// * Sørensen–Dice coefficient
+    ///
+    /// Implementation:
+    /// $$\text{Dice} = \dfrac{2TP}{2TP + FP + FN}$$
+    ///
     pub fn get_dice(&self) -> f64 {
         self.cm.get_dice()
     }
 
-    /// f-score
+    /// Calculates F-Score
+    ///
+    /// Also known as:
+    /// * F1-Score
+    /// * F-measure
+    /// * Harmonic mean of precision and recall
+    ///
+    /// Implementation:
+    /// $$\text{F1} = \dfrac{2TP}{2TP + FP + FN}$$
+    ///
     pub fn get_f_score(&self) -> f64 {
         self.cm.get_f_score()
     }
 
-    /// f-beta score
+    /// Calculates F-beta Score
+    ///
+    /// # Arguments
+    /// * `beta` - Weight of precision in harmonic mean
+    ///
+    /// Implementation:
+    /// $$\text{F}_\beta = \dfrac{(1+\beta^2)TP}{(1+\beta^2)TP + \beta^2FN + FP}$$
+    ///
     pub fn get_f_beta_score(&self, beta: u8) -> f64 {
         self.cm.get_f_beta_score(beta)
     }
 
-    /// jaccard score/IoU
+    /// Calculates Jaccard Score
+    ///
+    /// Also known as:
+    /// * IoU (Intersection over Union)
+    /// * Jaccard Index
+    /// * Jaccard Similarity Coefficient
+    ///
+    /// Implementation:
+    /// $$\text{IoU} = \dfrac{TP}{TP + FP + FN}$$
+    ///
     pub fn get_jaccard_score(&self) -> f64 {
         self.cm.get_jaccard_score()
     }
 
-    /// fnr
+    /// Calculates False Negative Rate (FNR)
+    ///
+    /// Also known as:
+    /// * Miss Rate
+    /// * Type II error rate
+    ///
+    /// Implementation:
+    /// $$\text{FNR} = \dfrac{FN}{FN + TP}$$
+    ///
     pub fn get_fnr(&self) -> f64 {
         self.cm.get_fnr()
     }
 
-    /// fpr
+    /// Calculates False Positive Rate (FPR)
+    ///
+    /// Also known as:
+    /// * Fall-out
+    /// * Type I error rate
+    ///
+    /// Implementation:
+    /// $$\text{FPR} = \dfrac{FP}{FP + TN}$$
+    ///
     pub fn get_fpr(&self) -> f64 {
         self.cm.get_fpr()
     }
 
-    /// volume similarity/VS/体积相似性
+    /// Calculates Volume Similarity
+    ///
+    /// Also known as:
+    /// * VS
+    /// * Volumetric Overlap Error
+    ///
+    /// Implementation:
+    /// $$\text{VS} = 1 - \dfrac{|FN-FP|}{2TP + FP + FN}$$
+    ///
     pub fn get_volume_similarity(&self) -> f64 {
         self.cm.get_volume_similarity()
     }
 
-    /// AUC/AUC_trapezoid/binary label AUC
+    /// Calculates Area Under the Curve
+    ///
+    /// Also known as:
+    /// * AUC
+    /// * AUC_trapezoid
+    /// * ROC AUC (for binary classification)
+    ///
+    /// Implementation:
+    /// $$\text{AUC} = 1 - \dfrac{FPR + FNR}{2}$$
+    ///
     pub fn get_auc(&self) -> f64 {
         self.cm.get_auc()
     }
 
-    /// KAP/Kappa/CohensKapp
+    /// Calculates Cohen's Kappa
+    ///
+    /// Also known as:
+    /// * KAP
+    /// * Kappa
+    /// * Cohen's Kappa Coefficient
+    ///
+    /// Implementation:
+    /// $$\text{Kappa} = \dfrac{fa - fc}{N - fc}$$
+    ///
+    /// where:
+    /// - fa = TP + TN
+    /// - fc = ((TN+FN)(TN+FP) + (FP+TP)(FN+TP))/N
+    /// - N = Total samples
+    ///
     pub fn get_kappa(&self) -> f64 {
         self.cm.get_kappa()
     }
 
-    /// mcc/MCC/Matthews correlation coefficient
+    /// Calculates Matthews Correlation Coefficient
+    ///
+    /// Also known as:
+    /// * MCC
+    /// * Phi Coefficient
+    /// * Matthews Phi Coefficient
+    ///
+    /// Implementation:
+    /// $$\text{MCC} = \dfrac{TP\times TN - FP\times FN}{\sqrt{(TP+FP)(TP+FN)(TN+FP)(TN+FN)}}$$
+    ///
     pub fn get_mcc(&self) -> f64 {
         self.cm.get_mcc()
     }
 
-    /// nmcc/normalized mcc
+    /// Calculates Normalized Matthews Correlation Coefficient
+    ///
+    /// Also known as:
+    /// * NMCC
+    /// * Normalized MCC
+    ///
+    /// Implementation:
+    /// $$\text{NMCC} = \dfrac{MCC + 1}{2}$$
+    ///
     pub fn get_nmcc(&self) -> f64 {
         self.cm.get_nmcc()
     }
 
-    /// amcc/adjusted mcc
+    /// Calculates Adjusted Matthews Correlation Coefficient
+    ///
+    /// Also known as:
+    /// * AMCC
+    /// * Adjusted MCC
+    ///
+    /// Implementation:
+    /// $$\text{AMCC} = abs(MCC)$$
+    ///
     pub fn get_amcc(&self) -> f64 {
         self.cm.get_amcc()
     }
 
-    /// adjust rand score/adjust rand index/ARI
+    /// Calculates Adjusted Rand Index
+    ///
+    /// Also known as:
+    /// * ARI
+    /// * Adjusted Rand Score
+    /// * Hubert and Arabie adjusted Rand index
+    ///
+    /// Implementation:
+    /// $$\text{ARI} = \dfrac{2(TP\times TN - FP\times FN)}{(TP+FN)(FN+TN) + (TP+FP)(FP+TN)}$$
+    ///
     pub fn get_adjust_rand_score(&self) -> f64 {
         self.cm.get_adjust_rand_score()
     }
 
-    pub fn cm_get_all(&self) -> BTreeMap<String, f64> {
-        self.cm.get_all()
-    }
-
+    /// Returns the Distance instance, creating it if not already initialized
     fn get_dist(&self) -> &Distance {
         self.dist
             .get_or_init(|| Distance::new(self.gt, self.pred, self.label))
     }
 
-    pub fn get_hausdorff_distance_95(&self) -> f32 {
-        self.get_dist().get_hausdorff_distance_95()
-    }
-
-    pub fn get_hausdorff_distance(&self) -> f32 {
+    /// Calculates Hausdorff Distance
+    ///
+    /// [Implementation](https://metrics-reloaded.dkfz.de/metric?id=hd):
+    /// $$ d(a,B) = \min_{b\in B}d(a,b) $$
+    /// $$ HD(A,B) = \max(\max_{a\in A}d(a,B), \max_{b\in B}d(b,A)) $$
+    ///
+    pub fn get_hausdorff_distance(&self) -> f64 {
         self.get_dist().get_hausdorff_distance()
     }
 
-    pub fn get_assd(&self) -> f32 {
+    /// Calculates 95th percentile Hausdorff Distance
+    ///
+    /// [Implementation](https://metrics-reloaded.dkfz.de/metric?id=hd95):
+    /// $$ d_{95}(A, B) = X_{95}\{\min_{b\in B}d(a,b)\} $$
+    /// $$ HD_{95}(A, B) = \max \{ d_{95}(A, B), d_{95}(B, A) \} $$
+    pub fn get_hausdorff_distance_95(&self) -> f64 {
+        self.get_dist().get_hausdorff_distance_95()
+    }
+
+    /// Calculates Average Symmetric Surface Distance
+    ///
+    /// Also known as:
+    /// * ASSD
+    /// * Average Surface Distance
+    ///
+    /// [Implementation](https://metrics-reloaded.dkfz.de/metric?id=assd):
+    /// $$ d(a,B) = \min_{b\in B}d(a,b) $$
+    /// $$ ASSD(A,B) = \dfrac{\sum_{a\in A}d(a,B) + \sum_{b\in B}d(b,A)}{|A|+ |B|} $$
+    ///
+    pub fn get_assd(&self) -> f64 {
         self.get_dist().get_assd()
     }
 
-    pub fn get_masd(&self) -> f32 {
+    /// Calculates Maximum Average Surface Distance
+    ///
+    /// Also known as:
+    /// * MASD
+    /// * Maximum Surface Distance
+    ///
+    /// [Implementation](https://metrics-reloaded.dkfz.de/metric?id=masd):
+    /// $$ d(a,B) = \min_{b\in B}d(a,b) $$
+    /// $$ MASD(A,B) = \dfrac{1}{2}(\dfrac{\sum_{a\in A}d(a,B)}{|A|} + \dfrac{\sum_{b\in B}d(b,A)}{|B|})$$
+    ///
+    pub fn get_masd(&self) -> f64 {
         self.get_dist().get_masd()
     }
 
+    /// Returns all confusion matrix based metrics as a BTreeMap
+    pub fn get_cm_all(&self) -> BTreeMap<String, f64> {
+        self.cm.get_all()
+    }
+
+    /// Returns all distance-based metrics as a BTreeMap
     pub fn get_dist_all(&self) -> BTreeMap<String, f64> {
         self.get_dist().get_all()
     }
 
+    /// Returns all metrics (confusion matrix and distance-based) as a BTreeMap
     pub fn get_all(&self) -> BTreeMap<String, f64> {
         let mut map = self.cm.get_all();
         map.extend(self.get_dist().get_all());
-        map.insert("label".to_string(), self.label as f64);
         map
     }
 }
 
 pub fn metrics(
-    gt: Nifti1Image<u8>,
-    pred: Nifti1Image<u8>,
+    gt: &Nifti1Image<u8>,
+    pred: &Nifti1Image<u8>,
     labels: Vec<u8>,
     with_distance: bool,
 ) -> Vec<BTreeMap<String, f64>> {
@@ -189,7 +391,8 @@ pub fn metrics(
     mat_results
 }
 
-pub fn metrics_all(gt: Nifti1Image<u8>, pred: Nifti1Image<u8>) -> Vec<BTreeMap<String, f64>> {
+/// Calculates all metrics for all labels
+pub fn all(gt: &Nifti1Image<u8>, pred: &Nifti1Image<u8>) -> Vec<BTreeMap<String, f64>> {
     let labels = merge_vector(
         get_unique_labels_parallel(gt.ndarray()),
         get_unique_labels_parallel(pred.ndarray()),
@@ -213,7 +416,7 @@ mod test {
         let gt = nii::read_image::<u8>(gt);
         let pred = nii::read_image::<u8>(pred);
 
-        let results = metrics(gt, pred, vec![1, 2, 3, 4, 5], false);
+        let results = metrics(&gt, &pred, vec![1, 2, 3, 4, 5], false);
         println!("{:?}", results);
         Ok(())
     }
@@ -229,7 +432,7 @@ mod test {
         println!("IO Cost {} ms", t.elapsed().as_millis());
 
         let t = std::time::Instant::now();
-        let results = metrics(gt, pred, vec![1, 2, 3, 4, 5], true);
+        let results = metrics(&gt, &pred, vec![1, 2, 3, 4, 5], true);
         println!("{:?}", results);
         println!("Calc Cost {} ms", t.elapsed().as_millis());
 
@@ -261,7 +464,7 @@ mod test {
         let masd = dist.get_masd();
         println!("Cost {:?} ms", t.elapsed().as_millis());
 
-        let _cm = dist.cm_get_all();
+        let _cm = dist.get_cm_all();
         println!("Cost {:?} ms", t.elapsed().as_millis());
 
         let _all = dist.get_all();
