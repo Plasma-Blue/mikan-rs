@@ -2,6 +2,7 @@ use crate::api::metrics;
 use crate::metrics::{ConfusionMatrix, Distance};
 use crate::utils::{get_unique_labels_parallel, merge_vector};
 use nii;
+use numpy::PyReadonlyArray3;
 use pyo3::prelude::*;
 use std::collections::BTreeMap;
 
@@ -22,6 +23,21 @@ impl ConfusionMatrixBind {
         let gt = nii::read_image::<u8>(gt_pth);
         let pred = nii::read_image::<u8>(pred_pth);
         let inner = ConfusionMatrix::new(&gt, &pred, label);
+        Ok(ConfusionMatrixBind { inner })
+    }
+
+    #[staticmethod]
+    pub fn new_from_ndarray(
+        _py: Python<'_>,
+        gt: PyReadonlyArray3<u8>,
+        pred: PyReadonlyArray3<u8>,
+        label: u8,
+    ) -> PyResult<Self> {
+        let t = std::time::Instant::now();
+        let gt = gt.as_array().to_owned();
+        let pred = pred.as_array().to_owned();
+        let inner = ConfusionMatrix::new_from_ndarray(&gt, &pred, label);
+        println!("new_from_ndarray: {:?}", t.elapsed().as_millis());
         Ok(ConfusionMatrixBind { inner })
     }
 
@@ -127,6 +143,20 @@ impl DistanceBind {
         Ok(DistanceBind { inner })
     }
 
+    #[staticmethod]
+    pub fn new_from_ndarray(
+        _py: Python<'_>,
+        gt: PyReadonlyArray3<u8>,
+        pred: PyReadonlyArray3<u8>,
+        spacing: [f32; 3],
+        label: u8,
+    ) -> PyResult<Self> {
+        let gt = gt.as_array().to_owned();
+        let pred = pred.as_array().to_owned();
+        let inner = Distance::new_from_ndarray(&gt, &pred, spacing, label);
+        Ok(DistanceBind { inner })
+    }
+
     pub fn get_hausdorff_distance_95(&self) -> f64 {
         self.inner.get_hausdorff_distance_95()
     }
@@ -167,7 +197,7 @@ pub fn metrics_all_bind(gt_pth: &str, pred_pth: &str) -> PyResult<Vec<BTreeMap<S
     let labels = merge_vector(
         get_unique_labels_parallel(gt.ndarray()),
         get_unique_labels_parallel(pred.ndarray()),
-        false,
+        true,
     );
     Ok(metrics(&gt, &pred, labels, true))
 }

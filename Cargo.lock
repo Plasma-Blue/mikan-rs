@@ -213,6 +213,7 @@ dependencies = [
  "ndarray-ndimage",
  "ndarray-stats",
  "nii-rs",
+ "numpy",
  "once_cell",
  "pyo3",
  "rand",
