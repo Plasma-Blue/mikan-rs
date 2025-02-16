@@ -1,5 +1,5 @@
 use ndarray::Zip;
-use ndarray::{arr3, Array3};
+use ndarray::{arr3, Array3, ArrayView3};
 use ndarray_ndimage::binary_erosion;
 use rayon::prelude::*;
 use std::collections::HashSet;
@@ -42,7 +42,7 @@ pub fn mean(data: &Vec<f32>) -> f32 {
     sum / count as f32
 }
 
-pub fn get_unique_labels_parallel(array: &Array3<u8>) -> Vec<u8> {
+pub fn get_unique_labels_parallel(array: ArrayView3<u8>) -> Vec<u8> {
     let chunks = array.as_slice().expect("Contiguous array").par_chunks(4096);
     let presents: Vec<_> = chunks
         .map(|chunk| {
