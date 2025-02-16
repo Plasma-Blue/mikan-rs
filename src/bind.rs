@@ -33,11 +33,9 @@ impl ConfusionMatrixBind {
         pred: PyReadonlyArray3<u8>,
         label: u8,
     ) -> PyResult<Self> {
-        let t = std::time::Instant::now();
-        let gt = gt.as_array().to_owned();
-        let pred = pred.as_array().to_owned();
-        let inner = ConfusionMatrix::new_from_ndarray(&gt, &pred, label);
-        println!("new_from_ndarray: {:?}", t.elapsed().as_millis());
+        let gt = gt.as_array();
+        let pred = pred.as_array();
+        let inner = ConfusionMatrix::new_from_ndarray(gt, pred, label);
         Ok(ConfusionMatrixBind { inner })
     }
 
@@ -151,9 +149,9 @@ impl DistanceBind {
         spacing: [f32; 3],
         label: u8,
     ) -> PyResult<Self> {
-        let gt = gt.as_array().to_owned();
-        let pred = pred.as_array().to_owned();
-        let inner = Distance::new_from_ndarray(&gt, &pred, spacing, label);
+        let gt = gt.as_array();
+        let pred = pred.as_array();
+        let inner = Distance::new_from_ndarray(gt, pred, spacing, label);
         Ok(DistanceBind { inner })
     }
 
