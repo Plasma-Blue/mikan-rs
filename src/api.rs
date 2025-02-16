@@ -436,8 +436,8 @@ pub fn metrics(
 /// ```
 pub fn all(gt: &Nifti1Image<u8>, pred: &Nifti1Image<u8>) -> Vec<BTreeMap<String, f64>> {
     let labels = merge_vector(
-        get_unique_labels_parallel(gt.ndarray()),
-        get_unique_labels_parallel(pred.ndarray()),
+        get_unique_labels_parallel(gt.ndarray().view()),
+        get_unique_labels_parallel(pred.ndarray().view()),
         false,
     );
     metrics(gt, pred, labels, true)

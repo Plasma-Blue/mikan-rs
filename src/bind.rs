@@ -193,11 +193,18 @@ pub fn metrics_all_bind(gt_pth: &str, pred_pth: &str) -> PyResult<Vec<BTreeMap<S
     let gt = nii::read_image::<u8>(gt_pth);
     let pred = nii::read_image::<u8>(pred_pth);
     let labels = merge_vector(
-        get_unique_labels_parallel(gt.ndarray()),
-        get_unique_labels_parallel(pred.ndarray()),
+        get_unique_labels_parallel(gt.ndarray().view()),
+        get_unique_labels_parallel(pred.ndarray().view()),
         true,
     );
     Ok(metrics(&gt, &pred, labels, true))
+}
+
+#[pyfunction]
+pub fn unique_bind(_py: Python<'_>, arr: PyReadonlyArray3<u8>) -> Vec<u32> {
+    let arr = arr.as_array();
+    let results = get_unique_labels_parallel(arr);
+    results.iter().map(|x| *x as u32).collect()
 }
 
 #[pymodule]
@@ -206,5 +213,6 @@ fn _mikan(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<DistanceBind>()?;
     m.add_function(wrap_pyfunction!(metrics_all_bind, m)?)?;
     m.add_function(wrap_pyfunction!(metrics_bind, m)?)?;
+    m.add_function(wrap_pyfunction!(unique_bind, m)?)?;
     Ok(())
 }
