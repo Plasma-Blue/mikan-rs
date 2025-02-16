@@ -22,13 +22,17 @@ impl ConfusionMatrix {
     pub fn new(gt: &Nifti1Image<u8>, pred: &Nifti1Image<u8>, label: u8) -> Self {
         let gt_arr = gt.ndarray();
         let pred_arr = pred.ndarray();
+        ConfusionMatrix::new_from_ndarray(&gt_arr, &pred_arr, label)
+    }
 
+    pub fn new_from_ndarray(gt: &Array3<u8>, pred: &Array3<u8>, label: u8) -> Self {
+        let t = std::time::Instant::now();
         let mut tp_count = 0;
         let mut fp_count = 0;
         let mut fn_count = 0;
         let mut tn_count = 0;
 
-        for (&a, &b) in gt_arr.iter().zip(pred_arr.iter()) {
+        for (&a, &b) in gt.iter().zip(pred.iter()) {
             if a == label && b == label {
                 tp_count += 1;
             } else if a != label && b == label {
@@ -39,6 +43,7 @@ impl ConfusionMatrix {
                 tn_count += 1;
             }
         }
+        println!("TOZEROS cost {} ms", t.elapsed().as_millis());
         ConfusionMatrix {
             tp_count: tp_count as f64,
             fp_count: fp_count as f64,
@@ -239,6 +244,15 @@ impl Distance {
         let gt_arr = gt.ndarray();
         let pred_arr = pred.ndarray();
 
+        Distance::new_from_ndarray(&gt_arr, &pred_arr, spacing, label)
+    }
+
+    pub fn new_from_ndarray(
+        gt_arr: &Array3<u8>,
+        pred_arr: &Array3<u8>,
+        spacing: [f32; 3],
+        label: u8,
+    ) -> Self {
         // Binarize
         let gt_arr = gt_arr.mapv(|x| if x == label { 1 } else { 0 });
         let pred_arr = pred_arr.mapv(|x| if x == label { 1 } else { 0 });
