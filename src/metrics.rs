@@ -22,33 +22,38 @@ impl ConfusionMatrix {
     pub fn new(gt: &Nifti1Image<u8>, pred: &Nifti1Image<u8>, label: u8) -> Self {
         let gt_arr = gt.ndarray();
         let pred_arr = pred.ndarray();
-        ConfusionMatrix::new_from_ndarray(&gt_arr, &pred_arr, label)
+        ConfusionMatrix::new_from_ndarray(gt_arr.view(), pred_arr.view(), label)
     }
 
-    pub fn new_from_ndarray(gt: &Array3<u8>, pred: &Array3<u8>, label: u8) -> Self {
-        let t = std::time::Instant::now();
-        let mut tp_count = 0;
-        let mut fp_count = 0;
-        let mut fn_count = 0;
-        let mut tn_count = 0;
+    pub fn new_from_ndarray(gt: ArrayView3<u8>, pred: ArrayView3<u8>, label: u8) -> Self {
+        let gt_slice = gt.as_slice().unwrap();
+        let pred_slice = pred.as_slice().unwrap();
 
-        for (&a, &b) in gt.iter().zip(pred.iter()) {
-            if a == label && b == label {
-                tp_count += 1;
-            } else if a != label && b == label {
-                fp_count += 1;
-            } else if a == label && b != label {
-                fn_count += 1;
-            } else if a != label && b != label {
-                tn_count += 1;
-            }
-        }
-        println!("TOZEROS cost {} ms", t.elapsed().as_millis());
+        let (tp, fp, fn_, tn) = gt_slice
+            .par_iter()
+            .zip(pred_slice.par_iter())
+            .fold(
+                || (0u64, 0u64, 0u64, 0u64),
+                |(mut tp, mut fp, mut fn_, mut tn), (&a, &b)| {
+                    match (a == label, b == label) {
+                        (true, true) => tp += 1,
+                        (false, true) => fp += 1,
+                        (true, false) => fn_ += 1,
+                        (false, false) => tn += 1,
+                    }
+                    (tp, fp, fn_, tn)
+                },
+            )
+            .reduce(
+                || (0, 0, 0, 0),
+                |(a1, b1, c1, d1), (a2, b2, c2, d2)| (a1 + a2, b1 + b2, c1 + c2, d1 + d2),
+            );
+
         ConfusionMatrix {
-            tp_count: tp_count as f64,
-            fp_count: fp_count as f64,
-            fn_count: fn_count as f64,
-            tn_count: tn_count as f64,
+            tp_count: tp as f64,
+            fp_count: fp as f64,
+            fn_count: fn_ as f64,
+            tn_count: tn as f64,
         }
     }
 
@@ -244,12 +249,12 @@ impl Distance {
         let gt_arr = gt.ndarray();
         let pred_arr = pred.ndarray();
 
-        Distance::new_from_ndarray(&gt_arr, &pred_arr, spacing, label)
+        Distance::new_from_ndarray(gt_arr.view(), pred_arr.view(), spacing, label)
     }
 
     pub fn new_from_ndarray(
-        gt_arr: &Array3<u8>,
-        pred_arr: &Array3<u8>,
+        gt_arr: ArrayView3<u8>,
+        pred_arr: ArrayView3<u8>,
         spacing: [f32; 3],
         label: u8,
     ) -> Self {
