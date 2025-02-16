@@ -1,12 +1,11 @@
 //! Core APIs. Carefully designed to be simple and easy to use.
 
-use crate::metrics::{ConfusionMatrix, Distance};
+use crate::metrics::{calc_metrics_use_ndarray, ConfusionMatrix, Distance};
 use crate::utils::{get_unique_labels_parallel, merge_vector};
 use std::collections::BTreeMap;
 
 use nii::Nifti1Image;
 use once_cell::unsync::OnceCell;
-use rayon::prelude::*;
 
 #[cfg_attr(doc, katexit::katexit)]
 /// A struct to calculate various metrics based on confusion matrix & distance for segmentation tasks, designed to provide fine-grained computational control, such as determining target labels and target metrics.
@@ -379,42 +378,30 @@ impl<'a> Evaluator<'a> {
 /// let pred = nii::read_image::<u8>(r"data\patients_26_segmentation.nii.gz");
 ///
 /// // Calculate only confusion matrix based metrics
-/// let basic_metrics = metrics(&gt, &pred, vec![1, 2, 3], false);
+/// let basic_metrics = metrics(&gt, &pred, &[1, 2, 3], false);
 ///
 /// // Calculate both confusion matrix and distance based metrics
-/// let all_metrics = metrics(&gt, &pred, vec![1, 2, 3], true);
+/// let all_metrics = metrics(&gt, &pred, &[1, 2, 3], true);
 /// ```
 pub fn metrics(
     gt: &Nifti1Image<u8>,
     pred: &Nifti1Image<u8>,
-    labels: Vec<u8>,
+    labels: &[u8],
     with_distance: bool,
 ) -> Vec<BTreeMap<String, f64>> {
-    let mut mat_results: Vec<BTreeMap<String, f64>> = labels
-        .par_iter()
-        .map(|&label| {
-            let cm = ConfusionMatrix::new(&gt, &pred, label);
-            let mut all_results = cm.get_all();
-            all_results.insert("label".to_string(), label as f64);
-            all_results
-        })
-        .collect();
-
-    if with_distance {
-        let dist_results: Vec<BTreeMap<String, f64>> = labels
-            .par_iter()
-            .map(|&label| {
-                let cm = Distance::new(&gt, &pred, label);
-                let mut all_results = cm.get_all();
-                all_results.insert("label".to_string(), label as f64);
-                all_results
-            })
-            .collect();
-        for (map1, map2) in mat_results.iter_mut().zip(dist_results.iter()) {
-            map1.extend(map2.iter().map(|(k, v)| (k.clone(), *v)));
-        }
-    }
-    mat_results
+    // TODO: support different size, spacing, direction in the future, now we assume they are the same
+    // Actually, having gt and pred in the same world space is enough
+    assert_eq!(gt.get_size(), pred.get_size(), "Size mismatch");
+    assert_eq!(gt.get_spacing(), pred.get_spacing(), "Spacing mismatch");
+    assert_eq!(
+        gt.get_direction(),
+        pred.get_direction(),
+        "Direction mismatch"
+    );
+    let gt_arr = gt.ndarray().view();
+    let pred_arr = pred.ndarray.view();
+    let spacing = gt.get_spacing();
+    calc_metrics_use_ndarray(gt_arr, pred_arr, labels, spacing, with_distance)
 }
 
 /// A simple function api to calculate all metrics for all labels.
@@ -440,7 +427,7 @@ pub fn all(gt: &Nifti1Image<u8>, pred: &Nifti1Image<u8>) -> Vec<BTreeMap<String,
         get_unique_labels_parallel(pred.ndarray().view()),
         false,
     );
-    metrics(gt, pred, labels, true)
+    metrics(gt, pred, &labels, true)
 }
 
 #[cfg(test)]
@@ -458,7 +445,7 @@ mod test {
         let gt = nii::read_image::<u8>(gt);
         let pred = nii::read_image::<u8>(pred);
 
-        let results = metrics(&gt, &pred, vec![1, 2, 3, 4, 5], false);
+        let results = metrics(&gt, &pred, &[1, 2, 3, 4, 5], false);
         println!("{:?}", results);
         Ok(())
     }
@@ -474,7 +461,7 @@ mod test {
         println!("IO Cost {} ms", t.elapsed().as_millis());
 
         let t = std::time::Instant::now();
-        let results = metrics(&gt, &pred, vec![1, 2, 3, 4, 5], true);
+        let results = metrics(&gt, &pred, &[1, 2, 3, 4, 5], true);
         println!("{:?}", results);
         println!("Calc Cost {} ms", t.elapsed().as_millis());
 

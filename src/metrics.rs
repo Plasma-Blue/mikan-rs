@@ -355,6 +355,41 @@ impl Distance {
     }
 }
 
+/// A ndarray api for python to calculate lots of metrics for given labels.
+pub fn calc_metrics_use_ndarray(
+    gt_arr: ArrayView3<u8>,
+    pred_arr: ArrayView3<u8>,
+    labels: &[u8],
+    spacing: [f32; 3],
+    with_distance: bool,
+) -> Vec<BTreeMap<String, f64>> {
+    let mut mat_results: Vec<BTreeMap<String, f64>> = labels
+        .par_iter()
+        .map(|&label| {
+            let cm = ConfusionMatrix::new_from_ndarray(gt_arr, pred_arr, label);
+            let mut all_results = cm.get_all();
+            all_results.insert("label".to_string(), label as f64);
+            all_results
+        })
+        .collect();
+
+    if with_distance {
+        let dist_results: Vec<BTreeMap<String, f64>> = labels
+            .par_iter()
+            .map(|&label| {
+                let cm = Distance::new_from_ndarray(gt_arr, pred_arr, spacing, label);
+                let mut all_results = cm.get_all();
+                all_results.insert("label".to_string(), label as f64);
+                all_results
+            })
+            .collect();
+        for (map1, map2) in mat_results.iter_mut().zip(dist_results.iter()) {
+            map1.extend(map2.iter().map(|(k, v)| (k.clone(), *v)));
+        }
+    }
+    mat_results
+}
+
 #[cfg(test)]
 mod test {
 

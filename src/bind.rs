@@ -1,5 +1,5 @@
 use crate::api::metrics;
-use crate::metrics::{ConfusionMatrix, Distance};
+use crate::metrics::{calc_metrics_use_ndarray, ConfusionMatrix, Distance};
 use crate::utils::{get_unique_labels_parallel, merge_vector};
 use nii;
 use numpy::PyReadonlyArray3;
@@ -7,23 +7,23 @@ use pyo3::prelude::*;
 use std::collections::BTreeMap;
 
 #[pyclass]
-pub struct ConfusionMatrixBind {
+pub struct ConfusionMatrixRS {
     inner: ConfusionMatrix,
 }
 
 #[pyclass]
-pub struct DistanceBind {
+pub struct DistanceRS {
     inner: Distance,
 }
 
 #[pymethods]
-impl ConfusionMatrixBind {
+impl ConfusionMatrixRS {
     #[staticmethod]
     pub fn new(gt_pth: &str, pred_pth: &str, label: u8) -> PyResult<Self> {
         let gt = nii::read_image::<u8>(gt_pth);
         let pred = nii::read_image::<u8>(pred_pth);
         let inner = ConfusionMatrix::new(&gt, &pred, label);
-        Ok(ConfusionMatrixBind { inner })
+        Ok(ConfusionMatrixRS { inner })
     }
 
     #[staticmethod]
@@ -36,7 +36,7 @@ impl ConfusionMatrixBind {
         let gt = gt.as_array();
         let pred = pred.as_array();
         let inner = ConfusionMatrix::new_from_ndarray(gt, pred, label);
-        Ok(ConfusionMatrixBind { inner })
+        Ok(ConfusionMatrixRS { inner })
     }
 
     /// Recall/Sensitivity/Hit rate/True positive rate (TPR)/敏感性/召回率
@@ -132,13 +132,13 @@ impl ConfusionMatrixBind {
 }
 
 #[pymethods]
-impl DistanceBind {
+impl DistanceRS {
     #[staticmethod]
     pub fn new(gt_pth: &str, pred_pth: &str, label: u8) -> PyResult<Self> {
         let gt = nii::read_image::<u8>(gt_pth);
         let pred = nii::read_image::<u8>(pred_pth);
         let inner = Distance::new(&gt, &pred, label);
-        Ok(DistanceBind { inner })
+        Ok(DistanceRS { inner })
     }
 
     #[staticmethod]
@@ -152,7 +152,7 @@ impl DistanceBind {
         let gt = gt.as_array();
         let pred = pred.as_array();
         let inner = Distance::new_from_ndarray(gt, pred, spacing, label);
-        Ok(DistanceBind { inner })
+        Ok(DistanceRS { inner })
     }
 
     pub fn get_hausdorff_distance_95(&self) -> f64 {
@@ -177,19 +177,32 @@ impl DistanceBind {
 }
 
 #[pyfunction]
-pub fn metrics_bind(
-    gt_pth: &str,
-    pred_pth: &str,
-    labels: Vec<u8>,
-    with_distances: bool,
-) -> PyResult<Vec<BTreeMap<String, f64>>> {
-    let gt = nii::read_image::<u8>(gt_pth);
-    let pred = nii::read_image::<u8>(pred_pth);
-    Ok(metrics(&gt, &pred, labels, with_distances))
+pub fn unique_rs(_py: Python<'_>, arr: PyReadonlyArray3<u8>) -> Vec<u32> {
+    let arr = arr.as_array();
+    let results = get_unique_labels_parallel(arr);
+    results.iter().map(|x| *x as u32).collect()
 }
 
 #[pyfunction]
-pub fn metrics_all_bind(gt_pth: &str, pred_pth: &str) -> PyResult<Vec<BTreeMap<String, f64>>> {
+pub fn calc_metrics_use_ndarray_rs(
+    _py: Python<'_>,
+    gt_arr: PyReadonlyArray3<u8>,
+    pred_arr: PyReadonlyArray3<u8>,
+    labels: Vec<u8>,
+    spacing: [f32; 3],
+    with_distances: bool,
+) -> PyResult<Vec<BTreeMap<String, f64>>> {
+    Ok(calc_metrics_use_ndarray(
+        gt_arr.as_array(),
+        pred_arr.as_array(),
+        &labels,
+        spacing,
+        with_distances,
+    ))
+}
+
+#[pyfunction]
+pub fn all_rs(gt_pth: &str, pred_pth: &str) -> PyResult<Vec<BTreeMap<String, f64>>> {
     let gt = nii::read_image::<u8>(gt_pth);
     let pred = nii::read_image::<u8>(pred_pth);
     let labels = merge_vector(
@@ -197,22 +210,15 @@ pub fn metrics_all_bind(gt_pth: &str, pred_pth: &str) -> PyResult<Vec<BTreeMap<S
         get_unique_labels_parallel(pred.ndarray().view()),
         true,
     );
-    Ok(metrics(&gt, &pred, labels, true))
-}
-
-#[pyfunction]
-pub fn unique_bind(_py: Python<'_>, arr: PyReadonlyArray3<u8>) -> Vec<u32> {
-    let arr = arr.as_array();
-    let results = get_unique_labels_parallel(arr);
-    results.iter().map(|x| *x as u32).collect()
+    Ok(metrics(&gt, &pred, &labels, true))
 }
 
 #[pymodule]
 fn _mikan(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<ConfusionMatrixBind>()?;
-    m.add_class::<DistanceBind>()?;
-    m.add_function(wrap_pyfunction!(metrics_all_bind, m)?)?;
-    m.add_function(wrap_pyfunction!(metrics_bind, m)?)?;
-    m.add_function(wrap_pyfunction!(unique_bind, m)?)?;
+    m.add_class::<ConfusionMatrixRS>()?;
+    m.add_class::<DistanceRS>()?;
+    m.add_function(wrap_pyfunction!(all_rs, m)?)?;
+    m.add_function(wrap_pyfunction!(unique_rs, m)?)?;
+    m.add_function(wrap_pyfunction!(calc_metrics_use_ndarray_rs, m)?)?;
     Ok(())
 }
