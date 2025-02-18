@@ -57,22 +57,34 @@ impl ConfusionMatrix {
         }
     }
 
-    /// Recall/Sensitivity/Hit rate/True positive rate (TPR)/敏感性/召回率
+    /// Recall/Sensitivity/Hit rate/True positive rate (TPR)
     pub fn get_senstivity(&self) -> f64 {
+        if (self.tp_count + self.fn_count) == 0.0 {
+            return 0.;
+        }
         self.tp_count / (self.tp_count + self.fn_count)
     }
 
-    /// Selectivity/Specificity/True negative rate (TNR)/特异性
+    /// Selectivity/Specificity/True negative rate (TNR)
     pub fn get_specificity(&self) -> f64 {
+        if (self.tn_count + self.fp_count) == 0.0 {
+            return 0.0;
+        }
         self.tn_count / (self.tn_count + self.fp_count)
     }
 
-    /// Precision/Positive predictive value (PPV)/精确性
+    /// Precision/Positive predictive value (PPV)
     pub fn get_precision(&self) -> f64 {
+        if (self.tp_count + self.fp_count) == 0.0 {
+            return 0.0;
+        }
         self.tp_count / (self.tp_count + self.fp_count)
     }
     /// accuracy/acc/Rand Index/RI/准确性
     pub fn get_accuracy(&self) -> f64 {
+        if (self.tp_count + self.tn_count + self.fp_count + self.fn_count) == 0.0 {
+            return 0.0;
+        }
         (self.tp_count + self.tn_count)
             / (self.tp_count + self.tn_count + self.fp_count + self.fn_count)
     }
@@ -84,16 +96,28 @@ impl ConfusionMatrix {
 
     /// Dice/DSC
     pub fn get_dice(&self) -> f64 {
+        if (2.0 * self.tp_count + self.fp_count + self.fn_count) == 0.0 {
+            return 0.0;
+        }
         (2.0 * self.tp_count) / (2.0 * self.tp_count + self.fp_count + self.fn_count)
     }
 
     /// f-score
     pub fn get_f_score(&self) -> f64 {
+        if (2.0 * self.tp_count + self.fp_count + self.fn_count) == 0.0 {
+            return 0.0;
+        }
         (2.0 * self.tp_count) / (2.0 * self.tp_count + self.fp_count + self.fn_count)
     }
 
     /// f-beta score
     pub fn get_f_beta_score(&self, beta: u8) -> f64 {
+        if ((1 + beta.pow(2)) as f64 * self.tp_count
+            + beta.pow(2) as f64 * self.fn_count * self.fp_count)
+            == 0.0
+        {
+            return 0.0;
+        }
         ((1 + beta.pow(2)) as f64 * self.tp_count)
             / ((1 + beta.pow(2)) as f64 * self.tp_count
                 + beta.pow(2) as f64 * self.fn_count * self.fp_count)
@@ -101,21 +125,33 @@ impl ConfusionMatrix {
 
     /// jaccard score/IoU
     pub fn get_jaccard_score(&self) -> f64 {
+        if (self.tp_count + self.fp_count + self.fn_count) == 0.0 {
+            return 0.0;
+        }
         self.tp_count / (self.tp_count + self.fp_count + self.fn_count)
     }
 
     /// fnr
     pub fn get_fnr(&self) -> f64 {
+        if (self.fn_count + self.tp_count) == 0.0 {
+            return 0.0;
+        }
         self.fn_count / (self.fn_count + self.tp_count)
     }
 
     /// fpr
     pub fn get_fpr(&self) -> f64 {
+        if (self.fp_count + self.tn_count) == 0.0 {
+            return 0.0;
+        }
         self.fp_count / (self.fp_count + self.tn_count)
     }
 
     /// volume similarity/VS/体积相似性
     pub fn get_volume_similarity(&self) -> f64 {
+        if (2.0 * self.tp_count + self.fp_count + self.fn_count) == 0.0 {
+            return 0.0;
+        }
         1.0 - (self.fn_count - self.fp_count).abs()
             / (2.0 * self.tp_count + self.fp_count + self.fn_count)
     }
@@ -132,6 +168,9 @@ impl ConfusionMatrix {
         let fc = ((self.tn_count + self.fn_count) * (self.tn_count + self.fp_count)
             + (self.fp_count + self.tp_count) * (self.fn_count + self.tp_count))
             / sum_;
+        if (sum_ - fc) == 0.0 {
+            return 0.0;
+        }
         (fa - fc) / (sum_ - fc)
     }
 
@@ -143,6 +182,9 @@ impl ConfusionMatrix {
             * (self.tp_count + self.fn_count)
             * (self.tn_count + self.fp_count)
             * (self.tn_count + self.fn_count);
+        if bot_raw == 0.0 {
+            return 0.0;
+        }
         let bot = bot_raw.sqrt();
         top / bot
     }
@@ -161,6 +203,9 @@ impl ConfusionMatrix {
         let top = self.tp_count * self.tn_count - self.fp_count * self.fn_count;
         let bot = (self.tp_count + self.fn_count) * (self.fn_count + self.tn_count)
             + (self.tp_count + self.fp_count) * (self.fp_count + self.tn_count);
+        if bot == 0.0 {
+            return 0.0;
+        }
         2.0 * top / bot
     }
 
@@ -377,8 +422,8 @@ pub fn calc_metrics_use_ndarray(
         let dist_results: Vec<BTreeMap<String, f64>> = labels
             .par_iter()
             .map(|&label| {
-                let cm = Distance::new_from_ndarray(gt_arr, pred_arr, spacing, label);
-                let mut all_results = cm.get_all();
+                let dst = Distance::new_from_ndarray(gt_arr, pred_arr, spacing, label);
+                let mut all_results = dst.get_all();
                 all_results.insert("label".to_string(), label as f64);
                 all_results
             })
