@@ -24,13 +24,22 @@ class LabelSelector:
     
     def metrics(self, metrics_names: Union[str, List[str]]) -> Union[float, List[float], Dict[str, Dict[str, float]]]:
 
-        metrics_list = [metrics_names] if isinstance(metrics_names, str) else metrics_names
+        if isinstance(metrics_names, str):
+            if metrics_names == "all":
+                metrics_list = list(set(ALIAS_DICT.values()))
+            else:
+                metrics_list = [metrics_names] 
+        else:
+            metrics_list = metrics_names
         
         # map alias
-        required_base_metrics = {
-            ALIAS_DICT[metric] 
-            for metric in metrics_list
-        }
+        try:
+            required_base_metrics = {
+                ALIAS_DICT[metric] 
+                for metric in metrics_list
+            }
+        except KeyError as e:
+            raise KeyError(f"{e} not in metric dicts. Check it !")
         
         need_distance = any(
             dist_met in required_base_metrics for dist_met in ("hausdorff_distance", "hausdorff_distance_95", "assd", "masd")
@@ -55,7 +64,7 @@ class LabelSelector:
             return [mapped_results[0][metric] for metric in metrics_names]
             
         # multi-labels 1-metric -> list[float]
-        if isinstance(metrics_names, str):
+        if isinstance(metrics_names, str) and metrics_names != "all":
             return [result[metrics_names] for result in mapped_results]
             
         # multi-labels multi-metrics -> dict
