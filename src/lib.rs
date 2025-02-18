@@ -2,9 +2,11 @@
 //!
 //! ## 🎨 Features
 //!
-//! - 🚀 **Blazing Fast Speed**: Written in Rust with high parallelization; speeds are 1-50 times faster than current tools, especially for Hausdorff distance calculations.
+//! - 🚀 **Blazing Fast**: Written in Rust with high parallelization; speeds are 10-200x faster than medpy (depends on the number of cores in your CPU), especially for Hausdorff distance calculations.
 //!
-//! - 🧮 **Comprehensive Metrics**: Easily compute a wide range of segmentation metrics:
+//! - 🎯 **Simple**: The API is so intuitive that you can start using it immediately while reading the [documentation](examples/tutorial.ipynb) in just one minute!
+//!
+//! - 🧮 **Comprehensive Metrics**: Easily to compute almost all segmentation metrics:
 //!
 //!   - **Confusion Matrix Based:**
 //!
@@ -22,10 +24,6 @@
 //!     - Average Symmetric Surface Distance (ASSD)
 //!     - Mean Average Surface Distance (MASD)
 //!
-//! - 🐍 **Python Interface**: Provides Python bindings for seamless integration and cross-language performance.
-//!
-//! - 🎯 **Simple**: The API is so intuitive that you can use it right away without reading documentation! Whether using library functions, binary files, or Python functions, you have maximum flexibility in usage!
-//!
 //! ## 🔨 Install
 //!
 //! `cargo add mikan-rs` for rust project.
@@ -38,11 +36,11 @@
 //!
 //! ## 📘 Usages
 //!
-//! For details, please refer to the [rust examples](https://github.com/Plasma-Blue/mikan-rs/blob/master/examples/tutorial.rs) and [python examples](https://github.com/Plasma-Blue/mikan-rs/blob/master/examples/tutorial.py)。
+//! For details, please refer to the [rust examples](https://github.com/Plasma-Blue/mikan-rs/blob/master/examples/tutorial.rs) and [python examples](https://github.com/Plasma-Blue/mikan-rs/blob/master/examples/tutorial.ipynb)。
 //!
 //! ## 🍚 Q&A
 //!
-//! Q: Why are my results different from medpy/seg_metrics/miseval/Metrics Reloaded?
+//! Q: Why are my results different from seg_metrics/miseval/Metrics Reloaded?
 //!
 //! A: They are wrong. Of course, we might be wrong too. PRs to fix issues are welcome!
 //!
