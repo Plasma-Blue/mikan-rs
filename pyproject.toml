@@ -12,6 +12,8 @@ classifiers = [
 dynamic = ["version"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
+dependencies = ["numpy", "SimpleITK"]
+
 [tool.maturin]
 features = ["pyo3/extension-module"]
 python-source = "python"
