@@ -4,7 +4,7 @@ A **m**edical **i**mage **k**it for segment**a**tion metrics evaluatio**n**, nat
 
 ## 🎨 Features
 
-- 🚀 **Blazing Fast**: Written in Rust with high parallelization; speeds are 10-200x faster than medpy (depends on the number of cores in your CPU), especially for Hausdorff distance calculations.
+- 🚀 **Blazingly Fast**: Written in Rust with high parallelization; speeds are 10-200x faster than medpy (depends on the number of cores in your CPU), especially for Hausdorff distance calculations.
 
 - 🎯 **Simple**: The API is so intuitive that you can start using it immediately while reading the [documentation](examples/tutorial.ipynb) in just one minute!
 
