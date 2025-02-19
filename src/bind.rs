@@ -1,6 +1,6 @@
 use crate::api::metrics;
 use crate::metrics::{calc_metrics_use_ndarray, ConfusionMatrix, Distance};
-use crate::utils::{get_unique_labels_parallel, merge_vector};
+use crate::utils::{get_unique_labels_parallel, init_logger, merge_vector};
 use nii;
 use numpy::PyReadonlyArray3;
 use pyo3::prelude::*;
@@ -215,6 +215,7 @@ pub fn all_rs(gt_pth: &str, pred_pth: &str) -> PyResult<Vec<BTreeMap<String, f64
 
 #[pymodule]
 fn _mikan(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    init_logger();
     m.add_class::<ConfusionMatrixRS>()?;
     m.add_class::<DistanceRS>()?;
     m.add_function(wrap_pyfunction!(all_rs, m)?)?;

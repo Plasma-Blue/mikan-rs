@@ -1,9 +1,41 @@
+use chrono;
+use colored::*;
+use env_logger::Builder;
+use log::LevelFilter;
 use ndarray::Zip;
 use ndarray::{arr3, Array3, ArrayView3};
 use ndarray_ndimage::binary_erosion;
 use rayon::prelude::*;
 use std::collections::HashSet;
 use std::hash::Hash;
+use std::io::Write;
+
+pub fn init_logger() {
+    Builder::new()
+        .format(|buf, record| {
+            let (level, message_color) = match record.level() {
+                log::Level::Error => ("ERROR".red(), Color::Red),
+                log::Level::Warn => ("WARN".yellow(), Color::Yellow),
+                log::Level::Info => ("INFO".green(), Color::Green),
+                log::Level::Debug => ("DEBUG".blue(), Color::Blue),
+                log::Level::Trace => ("TRACE".purple(), Color::Magenta),
+            };
+            let time = chrono::Local::now()
+                .format("%Y-%m-%d %H:%M:%S%.3f")
+                .to_string()
+                .truecolor(140, 194, 92);
+            let location = format!(
+                "{}:{}",
+                record.module_path().unwrap_or("unknown"),
+                record.line().unwrap_or(0)
+            )
+            .truecolor(66, 179, 184);
+            let message = record.args().to_string().color(message_color);
+            writeln!(buf, "{} | {} | {} | {}", time, level, location, message)
+        })
+        .filter(None, LevelFilter::Warn) // default: warning
+        .init();
+}
 
 fn partition(arr: &mut [f32], low: usize, high: usize) -> usize {
     let pivot = arr[high];
@@ -127,8 +159,8 @@ mod test {
     use std::error::Error;
 
     fn generate_large_vec(size: usize) -> Vec<f32> {
-        let mut rng = rand::thread_rng();
-        (0..size).map(|_| rng.gen_range(0.0..100.0)).collect()
+        let mut rng = rand::rng();
+        (0..size).map(|_| rng.random_range(0.0..100.0)).collect()
     }
 
     #[test]
@@ -145,12 +177,12 @@ mod test {
 
     #[test]
     fn test_get_percentile_2() -> Result<(), Box<dyn Error>> {
+        use rand::rng;
         use rand::seq::SliceRandom;
-        use rand::thread_rng;
         use std::time::Instant;
         let mut data: Vec<f32> = (1..=100000000).map(|x| x as f32).collect();
 
-        let mut rng = thread_rng();
+        let mut rng = rng();
         data.shuffle(&mut rng);
 
         let t = Instant::now();

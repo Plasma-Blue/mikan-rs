@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use crate::utils::{argwhere, get_binary_edge, get_percentile, mean};
 use kdtree::distance::squared_euclidean;
 use kdtree::KdTree;
+use log::warn;
 use ndarray::prelude::*;
 use ndarray_stats::QuantileExt;
 use rayon::prelude::*;
@@ -15,6 +16,7 @@ pub struct ConfusionMatrix {
     tn_count: f64,
     fp_count: f64,
     fn_count: f64,
+    label: u8,
 }
 
 impl ConfusionMatrix {
@@ -54,6 +56,7 @@ impl ConfusionMatrix {
             fp_count: fp as f64,
             fn_count: fn_ as f64,
             tn_count: tn as f64,
+            label,
         }
     }
 
@@ -97,6 +100,10 @@ impl ConfusionMatrix {
     /// Dice/DSC
     pub fn get_dice(&self) -> f64 {
         if (2.0 * self.tp_count + self.fp_count + self.fn_count) == 0.0 {
+            warn!(
+                "label={}, Dice=0 due to TP: {}, FP: {}, FN: {}",
+                self.label, self.tp_count, self.fp_count, self.fn_count
+            );
             return 0.0;
         }
         (2.0 * self.tp_count) / (2.0 * self.tp_count + self.fp_count + self.fn_count)
@@ -105,6 +112,10 @@ impl ConfusionMatrix {
     /// f-score
     pub fn get_f_score(&self) -> f64 {
         if (2.0 * self.tp_count + self.fp_count + self.fn_count) == 0.0 {
+            warn!(
+                "label={}, f-score=0 due to TP: {}, FP: {}, FN: {}",
+                self.label, self.tp_count, self.fp_count, self.fn_count
+            );
             return 0.0;
         }
         (2.0 * self.tp_count) / (2.0 * self.tp_count + self.fp_count + self.fn_count)
@@ -116,6 +127,10 @@ impl ConfusionMatrix {
             + beta.pow(2) as f64 * self.fn_count * self.fp_count)
             == 0.0
         {
+            warn!(
+                "label={}, f-beta-score=0 due to TP: {}, FP: {}, FN: {}",
+                self.label, self.tp_count, self.fp_count, self.fn_count
+            );
             return 0.0;
         }
         ((1 + beta.pow(2)) as f64 * self.tp_count)
@@ -126,6 +141,10 @@ impl ConfusionMatrix {
     /// jaccard score/IoU
     pub fn get_jaccard_score(&self) -> f64 {
         if (self.tp_count + self.fp_count + self.fn_count) == 0.0 {
+            warn!(
+                "label={}, jaccard=0 due to TP: {}, FP: {}, FN: {}",
+                self.label, self.tp_count, self.fp_count, self.fn_count
+            );
             return 0.0;
         }
         self.tp_count / (self.tp_count + self.fp_count + self.fn_count)
@@ -134,6 +153,10 @@ impl ConfusionMatrix {
     /// fnr
     pub fn get_fnr(&self) -> f64 {
         if (self.fn_count + self.tp_count) == 0.0 {
+            warn!(
+                "label={}, fnr=0 due to FP: {}, FN: {}",
+                self.label, self.tp_count, self.fn_count
+            );
             return 0.0;
         }
         self.fn_count / (self.fn_count + self.tp_count)
@@ -142,6 +165,10 @@ impl ConfusionMatrix {
     /// fpr
     pub fn get_fpr(&self) -> f64 {
         if (self.fp_count + self.tn_count) == 0.0 {
+            warn!(
+                "fpr=0 due to TP: {}, FP: {}, FN: {}",
+                self.tp_count, self.fp_count, self.fn_count
+            );
             return 0.0;
         }
         self.fp_count / (self.fp_count + self.tn_count)
@@ -150,6 +177,10 @@ impl ConfusionMatrix {
     /// volume similarity/VS/体积相似性
     pub fn get_volume_similarity(&self) -> f64 {
         if (2.0 * self.tp_count + self.fp_count + self.fn_count) == 0.0 {
+            warn!(
+                "label={}, vs=0 due to TP: {}, FP: {}, FN: {}",
+                self.label, self.tp_count, self.fp_count, self.fn_count
+            );
             return 0.0;
         }
         1.0 - (self.fn_count - self.fp_count).abs()
@@ -169,6 +200,10 @@ impl ConfusionMatrix {
             + (self.fp_count + self.tp_count) * (self.fn_count + self.tp_count))
             / sum_;
         if (sum_ - fc) == 0.0 {
+            warn!(
+                "label={}, kappa=0 due to TP: {}, FP: {}, FN: {}",
+                self.label, self.tp_count, self.fp_count, self.fn_count
+            );
             return 0.0;
         }
         (fa - fc) / (sum_ - fc)
@@ -183,7 +218,10 @@ impl ConfusionMatrix {
             * (self.tn_count + self.fp_count)
             * (self.tn_count + self.fn_count);
         if bot_raw == 0.0 {
-            return 0.0;
+            warn!(
+                "label={}, mcc=0 due to TP: {}, FP: {}, FN: {}",
+                self.label, self.tp_count, self.fp_count, self.fn_count
+            );
         }
         let bot = bot_raw.sqrt();
         top / bot
@@ -204,6 +242,10 @@ impl ConfusionMatrix {
         let bot = (self.tp_count + self.fn_count) * (self.fn_count + self.tn_count)
             + (self.tp_count + self.fp_count) * (self.fp_count + self.tn_count);
         if bot == 0.0 {
+            warn!(
+                "label={}, ARI=0 due to TP: {}, FP: {}, FN: {}",
+                self.label, self.tp_count, self.fp_count, self.fn_count
+            );
             return 0.0;
         }
         2.0 * top / bot
@@ -263,7 +305,7 @@ impl KDTree {
         points
             .par_iter()
             .map(|p| {
-                let point = [p.0 as f32, p.1 as f32, p.2 as f32];
+                let point = [p.0, p.1, p.2];
                 let a = self.tree.nearest(&point, 1, &squared_euclidean).unwrap()[0];
                 a.0 as f32
             })
@@ -349,6 +391,10 @@ impl Distance {
     }
 
     pub fn get_hausdorff_distance(&self) -> f64 {
+        if self.dist_gt_to_pred.len() == 0 || self.dist_pred_to_gt.len() == 0 {
+            warn!("hd=0 due to no voxels");
+            return 0.0;
+        }
         f32::max(
             Array::from(self.dist_pred_to_gt.clone())
                 .max()
@@ -362,6 +408,10 @@ impl Distance {
     }
 
     pub fn get_hausdorff_distance_95(&self) -> f64 {
+        if self.dist_gt_to_pred.len() == 0 || self.dist_pred_to_gt.len() == 0 {
+            warn!("hd95=0 due to no voxels");
+            return 0.0;
+        }
         let mut dist_pred_to_gt = self.dist_pred_to_gt.clone();
         let mut dist_gt_to_pred = self.dist_gt_to_pred.clone();
         f32::max(
@@ -371,6 +421,10 @@ impl Distance {
     }
 
     pub fn get_assd(&self) -> f64 {
+        if self.dist_gt_to_pred.len() == 0 || self.dist_pred_to_gt.len() == 0 {
+            warn!("assd=0 due to no voxels");
+            return 0.0;
+        }
         let merged = self
             .dist_pred_to_gt
             .iter()
@@ -381,6 +435,10 @@ impl Distance {
     }
 
     pub fn get_masd(&self) -> f64 {
+        if self.dist_gt_to_pred.len() == 0 || self.dist_pred_to_gt.len() == 0 {
+            warn!("masd=0 due to no voxels");
+            return 0.0;
+        }
         ((mean(&self.dist_pred_to_gt) + mean(&self.dist_gt_to_pred)) / 2.0) as f64
     }
 
