@@ -261,11 +261,11 @@ impl<'a> Evaluator<'a> {
         self.cm.get_nmcc()
     }
 
-    /// Calculates Adjusted Matthews Correlation Coefficient
+    /// Calculates Absolute Matthews Correlation Coefficient
     ///
     /// Also known as:
     /// * AMCC
-    /// * Adjusted MCC
+    /// * Absolute MCC
     ///
     /// Implementation:
     /// $$\text{AMCC} = abs(MCC)$$
@@ -308,7 +308,7 @@ impl<'a> Evaluator<'a> {
     ///
     /// [Implementation](https://metrics-reloaded.dkfz.de/metric?id=hd95):
     /// $$ d_{95}(A, B) = X_{95}\{\min_{b\in B}d(a,b)\} $$
-    /// $$ HD_{95}(A, B) = \max \{ d_{95}(A, B), d_{95}(B, A) \} $$
+    /// $$ HD_{95}(A, B) = \max \\{ d_{95}(A, B), d_{95}(B, A) \\} $$
     pub fn get_hausdorff_distance_95(&self) -> f64 {
         self.get_dist().get_hausdorff_distance_95()
     }
@@ -327,11 +327,12 @@ impl<'a> Evaluator<'a> {
         self.get_dist().get_assd()
     }
 
-    /// Calculates Maximum Average Surface Distance
+    /// Calculates Mean Average Surface Distance
     ///
     /// Also known as:
     /// * MASD
-    /// * Maximum Surface Distance
+    /// * MSD
+    /// * Mean Surface Distance
     ///
     /// [Implementation](https://metrics-reloaded.dkfz.de/metric?id=masd):
     /// $$ d(a,B) = \min_{b\in B}d(a,b) $$

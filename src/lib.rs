@@ -2,7 +2,7 @@
 //!
 //! ## 🎨 Features
 //!
-//! - 🚀 **Blazingly Fast**: Written in Rust with high parallelization; speeds are 10-200x faster than medpy (depends on the number of cores in your CPU), especially for Hausdorff distance calculations.
+//! - 🚀 **Blazingly Fast**: Written in Rust with high parallelization; speeds are 10-100x faster than medpy (depends on the number of cores in your CPU), especially for Hausdorff distance calculations.
 //!
 //! - 🎯 **Simple**: The API is so intuitive that you can start using it immediately while reading the [documentation](https://github.com/Plasma-Blue/mikan-rs/blob/master/examples/tutorial.ipynb) in just one minute!
 //!

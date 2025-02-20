@@ -196,6 +196,7 @@ class ArrayEvaluator:
     """
     
     def __init__(self, gt_arr: np.ndarray, pred_arr: np.ndarray, spacing):
+        assert gt_arr.shape == pred_arr.shape, "Array shape mismatch"
         self.gt_arr = gt_arr
         self.pred_arr = pred_arr
         self.spacing = spacing
