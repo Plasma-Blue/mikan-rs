@@ -157,6 +157,8 @@ class LabelSelector:
             mapped_results.append(mapped_result)
         
         if isinstance(metrics_names, str) and len(self.labels) == 1:
+            if metrics_names == "all":
+                return mapped_results[0]
             return mapped_results[0][metrics_names]
             
         if isinstance(metrics_names, list) and len(self.labels) == 1:
