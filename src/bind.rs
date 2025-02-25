@@ -146,7 +146,7 @@ impl DistanceRS {
         _py: Python<'_>,
         gt: PyReadonlyArray3<u8>,
         pred: PyReadonlyArray3<u8>,
-        spacing: [f32; 3],
+        spacing: [f64; 3],
         label: u8,
     ) -> PyResult<Self> {
         let gt = gt.as_array();
@@ -189,7 +189,7 @@ pub fn calc_metrics_use_ndarray_rs(
     gt_arr: PyReadonlyArray3<u8>,
     pred_arr: PyReadonlyArray3<u8>,
     labels: Vec<u8>,
-    spacing: [f32; 3],
+    spacing: [f64; 3],
     with_distances: bool,
 ) -> PyResult<Vec<BTreeMap<String, f64>>> {
     Ok(calc_metrics_use_ndarray(

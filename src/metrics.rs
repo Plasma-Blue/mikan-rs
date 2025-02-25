@@ -288,26 +288,26 @@ impl ConfusionMatrix {
 }
 
 struct KDTree {
-    tree: KdTree<f32, usize, [f32; 3]>,
+    tree: KdTree<f64, usize, [f64; 3]>,
 }
 
 impl KDTree {
-    fn new(points: &[(f32, f32, f32)]) -> Self {
+    fn new(points: &[(f64, f64, f64)]) -> Self {
         let mut kdtree = KdTree::new(3);
         for (idx, p) in points.iter().enumerate() {
-            let point = [p.0 as f32, p.1 as f32, p.2 as f32];
+            let point = [p.0 as f64, p.1 as f64, p.2 as f64];
             kdtree.add(point, idx).unwrap();
         }
         KDTree { tree: kdtree }
     }
 
-    fn query(&self, points: &[(f32, f32, f32)]) -> Vec<f32> {
+    fn query(&self, points: &[(f64, f64, f64)]) -> Vec<f64> {
         points
             .par_iter()
             .map(|p| {
                 let point = [p.0, p.1, p.2];
                 let a = self.tree.nearest(&point, 1, &squared_euclidean).unwrap()[0];
-                a.0 as f32
+                a.0 as f64
             })
             .collect()
     }
@@ -315,8 +315,8 @@ impl KDTree {
 
 /// A structure to calculate various metrics based on distance for binary classification or segmentation tasks.
 pub struct Distance {
-    dist_pred_to_gt: Vec<f32>,
-    dist_gt_to_pred: Vec<f32>,
+    dist_pred_to_gt: Vec<f64>,
+    dist_gt_to_pred: Vec<f64>,
 }
 
 impl Distance {
@@ -331,7 +331,7 @@ impl Distance {
             "Direction mismatch"
         );
 
-        let spacing = gt.get_spacing();
+        let spacing = gt.get_spacing().map(|x| x as f64);
 
         let gt_arr = gt.ndarray();
         let pred_arr = pred.ndarray();
@@ -342,7 +342,7 @@ impl Distance {
     pub fn new_from_ndarray(
         gt_arr: ArrayView3<u8>,
         pred_arr: ArrayView3<u8>,
-        spacing: [f32; 3],
+        spacing: [f64; 3],
         label: u8,
     ) -> Self {
         // Binarize
@@ -358,22 +358,22 @@ impl Distance {
         let pred_argw: Vec<(usize, usize, usize)> = argwhere(&pred_edge, 1);
 
         // Convert to physical coordinates
-        let gt_argw: Vec<(f32, f32, f32)> = gt_argw
+        let gt_argw: Vec<(f64, f64, f64)> = gt_argw
             .par_iter()
             .map(|x| {
-                let z = x.0 as f32 * spacing[2];
-                let y = x.1 as f32 * spacing[1];
-                let x = x.2 as f32 * spacing[0];
+                let z = x.0 as f64 * spacing[2];
+                let y = x.1 as f64 * spacing[1];
+                let x = x.2 as f64 * spacing[0];
                 (z, y, x)
             })
             .collect();
 
-        let pred_argw: Vec<(f32, f32, f32)> = pred_argw
+        let pred_argw: Vec<(f64, f64, f64)> = pred_argw
             .par_iter()
             .map(|x| {
-                let z = x.0 as f32 * spacing[2];
-                let y = x.1 as f32 * spacing[1];
-                let x = x.2 as f32 * spacing[0];
+                let z = x.0 as f64 * spacing[2];
+                let y = x.1 as f64 * spacing[1];
+                let x = x.2 as f64 * spacing[0];
                 (z, y, x)
             })
             .collect();
@@ -395,7 +395,7 @@ impl Distance {
             warn!("hd=0 due to no voxels");
             return 0.0;
         }
-        f32::max(
+        f64::max(
             Array::from(self.dist_pred_to_gt.clone())
                 .max()
                 .unwrap()
@@ -404,7 +404,7 @@ impl Distance {
                 .max()
                 .unwrap()
                 .clone(),
-        ) as f64
+        )
     }
 
     pub fn get_hausdorff_distance_95(&self) -> f64 {
@@ -414,10 +414,10 @@ impl Distance {
         }
         let mut dist_pred_to_gt = self.dist_pred_to_gt.clone();
         let mut dist_gt_to_pred = self.dist_gt_to_pred.clone();
-        f32::max(
+        f64::max(
             get_percentile(&mut dist_pred_to_gt, 0.95),
             get_percentile(&mut dist_gt_to_pred, 0.95),
-        ) as f64
+        )
     }
 
     pub fn get_assd(&self) -> f64 {
@@ -463,7 +463,7 @@ pub fn calc_metrics_use_ndarray(
     gt_arr: ArrayView3<u8>,
     pred_arr: ArrayView3<u8>,
     labels: &[u8],
-    spacing: [f32; 3],
+    spacing: [f64; 3],
     with_distance: bool,
 ) -> Vec<BTreeMap<String, f64>> {
     let mut mat_results: Vec<BTreeMap<String, f64>> = labels

@@ -8,7 +8,7 @@ A **m**edical **i**mage **k**it for segment**a**tion metrics evaluatio**n**, nat
 
 - 🎯 **Simple**: The API is so intuitive that you can start using it immediately while reading the [documentation](https://github.com/Plasma-Blue/mikan-rs/blob/master/examples/tutorial.ipynb) in just one minute!
 
-- 🧮 **Comprehensive Metrics**: Easily to compute almost all of segmentation metrics:
+- 🧮 **Comprehensive Metrics**: Easily to compute almost all of segmentation metrics, **results are consistent with medpy**:
 
   - **Confusion Matrix Based:**
 
@@ -28,9 +28,18 @@ A **m**edical **i**mage **k**it for segment**a**tion metrics evaluatio**n**, nat
 
 ## 🔨 Install
 
-`cargo add mikan-rs` for rust project.
+For Rust projects, add the following to your `Cargo.toml`:
 
-`pip install mikan-rs` for python.
+```toml
+[dependencies]
+mikan-rs = "*"
+```
+
+For Python, install via pip:
+
+```sh
+pip install mikan-rs
+```
 
 ## 🥒 Develop
 
@@ -46,7 +55,7 @@ gt = sitk.ReadImage("gt.nii.gz", sitk.sitkUInt8)
 pred = sitk.ReadImage("pred.nii.gz", sitk.sitkUInt8)
 
 e = mikan.Evaluator(gt, pred)
-e.labels(1).metrics("dice")
+e.labels([1, 2, 3]).metrics(["dice", "hd", "hd95", "assd"])
 ```
 
 For details, please refer to the [python examples](https://github.com/Plasma-Blue/mikan-rs/blob/master/examples/tutorial.ipynb) and [rust examples](https://github.com/Plasma-Blue/mikan-rs/blob/master/examples/tutorial.rs).
@@ -73,9 +82,9 @@ A: They are wrong. Of course, we might be wrong too. PRs to fix issues are welco
 Licensed under either of the following licenses, at your choice:
 
 Apache License, Version 2.0
-(See LICENSE-APACHE or visit http://www.apache.org/licenses/LICENSE-2.0)
+(See LICENSE-APACHE or visit <http://www.apache.org/licenses/LICENSE-2.0>)
 
 MIT License
-(See LICENSE-MIT or visit http://opensource.org/licenses/MIT)
+(See LICENSE-MIT or visit <http://opensource.org/licenses/MIT>)
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this project, as defined by the Apache License 2.0, will be dual-licensed under the above licenses without any additional terms or conditions.
