@@ -401,7 +401,7 @@ pub fn metrics(
     );
     let gt_arr = gt.ndarray().view();
     let pred_arr = pred.ndarray.view();
-    let spacing = gt.get_spacing();
+    let spacing = gt.get_spacing().map(|x| x as f64);
     calc_metrics_use_ndarray(gt_arr, pred_arr, labels, spacing, with_distance)
 }
 

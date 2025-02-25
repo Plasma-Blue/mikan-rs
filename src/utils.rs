@@ -37,7 +37,7 @@ pub fn init_logger() {
         .init();
 }
 
-fn partition(arr: &mut [f32], low: usize, high: usize) -> usize {
+fn partition(arr: &mut [f64], low: usize, high: usize) -> usize {
     let pivot = arr[high];
     let mut i = low;
     for j in low..high {
@@ -50,8 +50,8 @@ fn partition(arr: &mut [f32], low: usize, high: usize) -> usize {
     i
 }
 
-pub fn get_percentile(arr: &mut [f32], percentile: f32) -> f32 {
-    fn quickselect_helper(arr: &mut [f32], low: usize, high: usize, k: usize) -> f32 {
+pub fn get_percentile(arr: &mut [f64], percentile: f64) -> f64 {
+    fn quickselect_helper(arr: &mut [f64], low: usize, high: usize, k: usize) -> f64 {
         if low == high {
             return arr[low];
         }
@@ -64,14 +64,14 @@ pub fn get_percentile(arr: &mut [f32], percentile: f32) -> f32 {
             quickselect_helper(arr, pivot_index + 1, high, k)
         }
     }
-    let percentile = (arr.len() as f32 * percentile).round() as usize - 1;
+    let percentile = (arr.len() as f64 * percentile).round() as usize - 1;
     quickselect_helper(arr, 0, arr.len() - 1, percentile)
 }
 
-pub fn mean(data: &Vec<f32>) -> f32 {
-    let sum: f32 = data.iter().sum();
+pub fn mean(data: &Vec<f64>) -> f64 {
+    let sum: f64 = data.iter().sum();
     let count = data.len();
-    sum / count as f32
+    sum / count as f64
 }
 
 pub fn get_unique_labels_parallel(array: ArrayView3<u8>) -> Vec<u8> {
@@ -158,7 +158,7 @@ mod test {
     use rand::Rng;
     use std::error::Error;
 
-    fn generate_large_vec(size: usize) -> Vec<f32> {
+    fn generate_large_vec(size: usize) -> Vec<f64> {
         let mut rng = rand::rng();
         (0..size).map(|_| rng.random_range(0.0..100.0)).collect()
     }
@@ -180,7 +180,7 @@ mod test {
         use rand::rng;
         use rand::seq::SliceRandom;
         use std::time::Instant;
-        let mut data: Vec<f32> = (1..=100000000).map(|x| x as f32).collect();
+        let mut data: Vec<f64> = (1..=100000000).map(|x| x as f64).collect();
 
         let mut rng = rng();
         data.shuffle(&mut rng);
